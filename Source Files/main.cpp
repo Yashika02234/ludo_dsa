@@ -5,21 +5,19 @@
 #include <chrono>
 #include "../Header Files/Player.h"
 
-const int BOARD_SIZE = 52;
-
 using namespace std;
+
+const int BOARD_SIZE = 52;
+const int safeZones[] = {0, 8, 13, 21, 26, 34, 39, 47};
+const int numSafeZones = sizeof(safeZones) / sizeof(safeZones[0]);
 
 int rollDice() {
     return (rand() % 6) + 1;
 }
 
-const int safeZones[] = {0, 8, 13, 21, 26, 34, 39, 47};
-const int numSafeZones = sizeof(safeZones) / sizeof(safeZones[0]);
-
 bool isSafeZone(int position) {
     for (int i = 0; i < numSafeZones; i++) {
-        if (safeZones[i] == position)
-            return true;
+        if (safeZones[i] == position) return true;
     }
     return false;
 }
@@ -56,51 +54,34 @@ void checkForKills(Player* attacker, Player* players[], int totalPlayers, int at
     }
 }
 
-void drawBoardWithTokens(Player* players[], int totalPlayers) {
+void drawEmptyLudoBoard() {
     string board[15][15];
+
     for (int i = 0; i < 15; i++)
         for (int j = 0; j < 15; j++)
             board[i][j] = "  ";
 
-    // Home areas
+    // Red Home (Top-left)
     for (int i = 0; i < 6; i++)
         for (int j = 0; j < 6; j++)
             board[i][j] = "RR";
+
+    // Blue Home (Bottom-left)
     for (int i = 9; i < 15; i++)
         for (int j = 0; j < 6; j++)
             board[i][j] = "BB";
 
-    // Center
+    // Center star
     for (int i = 6; i < 9; i++)
         for (int j = 6; j < 9; j++)
             board[i][j] = "**";
 
-    // Paths (rough layout)
+    // Only red and blue paths
     for (int i = 0; i < 6; i++) board[i][6] = "[]";
     for (int i = 0; i < 6; i++) board[6][i] = "[]";
+
     for (int i = 9; i < 15; i++) board[i][8] = "[]";
-    for (int i = 9; i < 15; i++) board[8][i] = "[]";
     for (int j = 0; j < 6; j++) board[8][j] = "[]";
-    for (int j = 9; j < 15; j++) board[6][j] = "[]";
-    for (int j = 0; j < 6; j++) board[j][8] = "[]";
-    for (int j = 9; j < 15; j++) board[8][j] = "[]";
-
-    // Show tokens on board
-    for (int p = 0; p < totalPlayers; p++) {
-        Player* player = players[p];
-        string symbol = (player->getName() == "Red") ? "R" : "B";
-
-        for (int t = 0; t < 4; t++) {
-            Token& token = player->getToken(t);
-            if (!token.finished() && token.getPosition() != -1) {
-                int displayPos = token.getPosition() % 52;
-                int row = 1 + (displayPos / 13);   // Just for display layout
-                int col = 1 + (displayPos % 13);
-                if (row < 15 && col < 15)
-                    board[row][col] = symbol + to_string(t + 1);
-            }
-        }
-    }
 
     cout << "\n========== ASCII LUDO BOARD ==========\n\n";
     for (int i = 0; i < 15; i++) {
@@ -109,13 +90,6 @@ void drawBoardWithTokens(Player* players[], int totalPlayers) {
         cout << endl;
     }
     cout << "\n======================================\n";
-}
-
-void animateMovement(int from, int to) {
-    for (int pos = from + 1; pos <= to; ++pos) {
-        cout << "Moving... Position: " << (pos % BOARD_SIZE) << endl;
-        this_thread::sleep_for(chrono::milliseconds(200));
-    }
 }
 
 int main() {
@@ -132,8 +106,7 @@ int main() {
         Player* currentPlayer = players[currentPlayerIndex];
 
         cout << "\n" << currentPlayer->getName() << "'s turn\n";
-
-        drawBoardWithTokens(players, totalPlayers);
+        drawEmptyLudoBoard();
 
         int dice = rollDice();
         cout << "Rolled a " << dice << "!\n";
@@ -165,9 +138,8 @@ int main() {
                     cout << "Token finished!\n";
                 } else {
                     newPos = newPos % BOARD_SIZE;
-                    animateMovement(oldPos, newPos);
                     chosen.setPosition(newPos);
-                    cout << "Token moved to " << newPos << endl;
+                    cout << "Token moved from " << oldPos << " to " << newPos << endl;
                     checkForKills(currentPlayer, players, totalPlayers, currentPlayerIndex, newPos);
                 }
 
